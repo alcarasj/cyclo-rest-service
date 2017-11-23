@@ -2,10 +2,13 @@
   "name": "master-server",
   "version": "1.0.0",
   "description": "",
-  "main": "master-server.js",
+  "main": "masterServer.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Jerico Alcaras",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.2"
+  }
 }
