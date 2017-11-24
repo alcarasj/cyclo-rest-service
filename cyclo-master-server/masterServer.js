@@ -24,26 +24,26 @@ masterServer.post('/analyse',(req, res) => {
     if (err) {
        console.log("Unable to make a connection to GitHub.");
     } else {
-       console.log("GitHub connection is OK.\nCloning Git repository at " + repoLink + "...");
+       console.log("GitHub connection is OK.\nCloning Git repository at " + repoLink + " (this may take awhile)...");
     }
   });
   // Clone the repository into the `./repo` folder, get all JS files and distribute to slave servers.
   fse.remove(REPODIR).then(() => {
-    Git.Clone('https://github.com/alcarasj/awesome-chat-server', REPODIR)
+    Git.Clone(repoLink, REPODIR)
     .done(() => {
-      console.log("Cloning complete.\nRetrieving all JS files in repository for analysis...")
-      
-      
-      
-      
-      
-      
-      
-      
-      res.send("Alri.");  
+      console.log("Cloning complete.\nRetrieving all JS files in repository for analysis...");
+
+
+
+
+
+
+
+
    })
    .catch((err) => console.log(err));
   });
+  res.send("Alri.");
 });
 
 masterServer.listen(PORT, (err) => {
