@@ -5,8 +5,13 @@ const PORT = 8080;
 
 var masterServer = express();
 
-masterServer.get('/',function(req,res){
+masterServer.get('/', (req, res) => {
   res.sendFile(path.join(__dirname + '/index.html'));
+});
+
+masterServer.get('/analyse',(req, res) => {
+  console.log(req.body);
+  res.send("Story");
 });
 
 masterServer.listen(PORT, (err) => {

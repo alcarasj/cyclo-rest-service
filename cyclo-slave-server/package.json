@@ -1,5 +1,5 @@
 {
-  "name": "slave-server",
+  "name": "cyclo-slave-server",
   "version": "1.0.0",
   "description": "",
   "main": "slaveServer.js",
