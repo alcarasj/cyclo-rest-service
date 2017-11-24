@@ -23,7 +23,7 @@ var callback = (report) => {
 plato.inspect(files, outputDir, options, callback);
 */
 
-slaveServer.get('/',function(req,res){
+slaveServer.get('/', (req, res) => {
   res.sendFile(path.join(__dirname + '/index.html'));
 });
 
