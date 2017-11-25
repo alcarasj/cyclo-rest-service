@@ -38,8 +38,12 @@ masterServer.post('/analyse', (req, res) => {
          getJSFiles(clonePath, /\.js$/);
 
          //Divide up the files to send to slaves
-         var fileChunks = chunkifyFiles(JSFiles, SLAVES.length);
-         console.log(fileChunks);
+         if (JSFiles.length <= SLAVES.length) {
+           //simple for-loop round-robin
+         } else {
+           var fileChunks = splitFiles(JSFiles, SLAVES.length);
+           console.log(fileChunks);
+         }
 
        });
        res.send("Alri.");
@@ -60,19 +64,28 @@ masterServer.post('/analyse', (req, res) => {
       }
     }
   }
-
-  chunkifyFiles = (files, chunkSize) => {
-    var index = 0;
-    var chunks = [];
-    for (var i = 0; i < files.length; i += chunkSize) {
-        chunk = files.slice(i, i + chunkSize);
-        chunks.push(chunk);
-    }
-    return chunks;
-  }
 });
 
-
+splitFiles = (files, parts) => {
+    var rest = files.length % parts, // how much to divide
+        restUsed = rest, // to keep track of the division over the elements
+        partLength = Math.floor(files.length / parts),
+        result = [];
+    for (var i = 0; i < files.length; i += partLength) {
+        var end = partLength + i,
+            add = false;
+        if (rest !== 0 && restUsed) { // should add one element for the division
+            end++;
+            restUsed--; // we've used one division element now
+            add = true;
+        }
+        result.push(files.slice(i, end)); // part of the array
+        if (add) {
+            i++; // also increment i in the case we added an extra element for division
+        }
+    }
+    return result;
+}
 
 masterServer.listen(PORT, (err) => {
   if (err) {
