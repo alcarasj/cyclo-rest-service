@@ -61,14 +61,18 @@ masterServer.post('/analyse', (req, res) => {
             slaveZip.writeZip(pathToSlaveZip);
             const hash = md5File.sync(pathToSlaveZip);
             var form = new FormData();
-            form.append('forAnalysis', path.join(__dirname, pathToSlaveZip));
+            form.append('forAnalysis', fs.createReadStream(path.join(__dirname, pathToSlaveZip)));
             form.append('checksum', hash);
             console.log(fileChunks[i].length + " JS files will be sent to SLAVE-" + i + " at " + slaveIP + "\nMD5 Hash: " + hash);
-            form.submit('https://' + slaveIP + URL, (err, slaveRes) => {
-              //do something
-              res.send('Nigga');
+            form.submit('http://' + slaveIP + URL, (err, slaveRes) => {
+              if (err) {
+                console.log(err);
+              } else {
+                console.log("File upload complete.");
+              }
             });
           });
+          res.send("Complete?");
         }
       });
     }
