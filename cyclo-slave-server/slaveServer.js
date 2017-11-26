@@ -1,10 +1,14 @@
 const plato = require('plato');
 const express = require('express');
 const path = require("path");
+const multer = require('multer');
+const bodyParser = require("body-parser");
 
-const PORT = 8080;
+const PORT = 8081;
 
 var slaveServer = express();
+slaveServer.use(bodyParser.urlencoded({ extended: false }));
+slaveServer.use(bodyParser.json());
 
 /*
 var files = [
@@ -23,8 +27,9 @@ var callback = (report) => {
 plato.inspect(files, outputDir, options, callback);
 */
 
-slaveServer.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname + '/index.html'));
+slaveServer.post('/analyse', (req, res) => {
+  console.log(req.body);
+  res.send('Story bud?');
 });
 
 slaveServer.listen(PORT, (err) => {
