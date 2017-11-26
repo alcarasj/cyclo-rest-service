@@ -6,10 +6,18 @@ const fs = require('fs');
 const rmraf = require('rimraf');
 const dns = require('dns');
 const request = require('request');
+const FormData = require('form-data');
+const AdmZip = require('adm-zip');
+const md5File = require("md5-file");
 
 const PORT = 8080;
-const SLAVES = ['http://127.0.0.1:8081'];
-const SLAVE_ENDPOINT = '/analyse';
+const SLAVES = ['127.0.0.1:8081'];
+const URL = '/analyse';
+const ZIPDIR = './slaveZips';
+
+if (!fs.existsSync(ZIPDIR)) {
+    fs.mkdirSync(ZIPDIR);
+}
 
 var masterServer = express();
 masterServer.use(bodyParser.urlencoded({ extended: false }));
@@ -36,22 +44,29 @@ masterServer.post('/analyse', (req, res) => {
       var repo = Git.Clone(repoURL, clonePath).catch((err) => {
         console.log(err);
       }).then((repo) => {
-        console.log("Cloning complete!\nRetrieving JS files for analysis...");
         getJSFiles(clonePath, /\.js$/);
-
+        console.log("Cloning complete!\nDetected " + JSFiles.length + " JS files for analysis.");
         //Divide up the files to send to slaves
         if (JSFiles.length <= SLAVES.length) {
-          //simple for-loop round-robin
+          //simple for-loop round-robin TODO
         } else {
+          console.log("Dividing JS files amongst slaves...");
           var fileChunks = splitFiles(JSFiles, SLAVES.length);
-          SLAVES.forEach((slave, index) => {
-            var formData = { attachments: fileChunks[index] };
-            console.log(formData);
-            request.post({url: slave + SLAVE_ENDPOINT, formData: formData}, (err, res, body) => {
-              if (err) {
-                return console.error('Upload failed:', err);
-              }
-              console.log('Upload successful! Server responded with:', body);
+          SLAVES.forEach((slaveIP, i) => {
+            var slaveZip = new AdmZip();
+            fileChunks[i].forEach((file) => {
+              slaveZip.addLocalFile(file);
+            });
+            const pathToSlaveZip = ZIPDIR + "/" + repoName + "-SLAVE-" + i + ".zip";
+            slaveZip.writeZip(pathToSlaveZip);
+            const hash = md5File.sync(pathToSlaveZip);
+            var form = new FormData();
+            form.append('forAnalysis', path.join(__dirname, pathToSlaveZip));
+            form.append('checksum', hash);
+            console.log(fileChunks[i].length + " JS files will be sent to SLAVE-" + i + " at " + slaveIP + "\nMD5 Hash: " + hash);
+            form.submit('https://' + slaveIP + URL, (err, slaveRes) => {
+              //do something
+              res.send('Nigga');
             });
           });
         }
@@ -68,7 +83,7 @@ masterServer.post('/analyse', (req, res) => {
         getJSFiles(fileName, filter);
       }
       else if (filter.test(fileName)) {
-        JSFiles.push(fs.createReadStream(fileName));
+        JSFiles.push(fileName);
       }
     }
   }

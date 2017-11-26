@@ -3,12 +3,13 @@ const express = require('express');
 const path = require("path");
 const multer = require('multer');
 const bodyParser = require("body-parser");
+const formidable = require('formidable');
+const util = require('util');
 
 const PORT = 8081;
 
 var slaveServer = express();
 slaveServer.use(bodyParser.urlencoded({ extended: false }));
-slaveServer.use(bodyParser.json());
 
 /*
 var files = [
@@ -28,8 +29,13 @@ plato.inspect(files, outputDir, options, callback);
 */
 
 slaveServer.post('/analyse', (req, res) => {
-  console.log(req.body);
-  res.send('Story bud?');
+    var form = new formidable.IncomingForm();
+    form.parse(req, function(err, fields, files) {
+      res.writeHead(200, {'content-type': 'text/plain'});
+      res.write('received upload:\n\n');
+      console.log(util.inspect({fields: fields, files: files}));
+      res.end(util.inspect({fields: fields, files: files}));
+    });
 });
 
 slaveServer.listen(PORT, (err) => {
