@@ -6,7 +6,12 @@ const bodyParser = require("body-parser");
 const formidable = require('formidable');
 const util = require('util');
 
-const PORT = 8081;
+if (process.argv.length <= 2) {
+  console.log("Usage: " + __filename + " PORT_NUMBER");
+  process.exit(-1);
+}
+
+const PORT = process.argv[2];
 
 var slaveServer = express();
 slaveServer.use(bodyParser.urlencoded({ extended: false }));

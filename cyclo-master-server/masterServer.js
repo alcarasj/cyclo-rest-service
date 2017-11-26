@@ -11,7 +11,7 @@ const AdmZip = require('adm-zip');
 const md5File = require("md5-file");
 
 const PORT = 8080;
-const SLAVES = ['127.0.0.1:8081'];
+const SLAVES = ['127.0.0.1:8081', '127.0.0.1:8082', '127.0.0.1:8083'];
 const URL = '/analyse';
 const ZIPDIR = './slaveZips';
 
@@ -68,7 +68,7 @@ masterServer.post('/analyse', (req, res) => {
               if (err) {
                 console.log(err);
               } else {
-                console.log("File upload complete.");
+                console.log("Zipped JS files successfully sent to SLAVE-" + i + " for analysis.");
               }
             });
           });
