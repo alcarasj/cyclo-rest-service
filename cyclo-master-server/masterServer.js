@@ -57,18 +57,20 @@ masterServer.post('/analyse', (req, res) => {
             fileChunks[i].forEach((file) => {
               slaveZip.addLocalFile(file);
             });
-            const pathToSlaveZip = ZIPDIR + "/" + repoName + "-SLAVE-" + i + ".zip";
+            const slaveZipName = repoName + "-SLAVE-" + i + ".zip"
+            const pathToSlaveZip = ZIPDIR + "/" + slaveZipName;
             slaveZip.writeZip(pathToSlaveZip);
             const hash = md5File.sync(pathToSlaveZip);
             var form = new FormData();
-            form.append('forAnalysis', fs.createReadStream(path.join(__dirname, pathToSlaveZip)));
-            form.append('checksum', hash);
+            form.append('JSFilesZip', fs.createReadStream(path.join(__dirname, pathToSlaveZip)));
+            form.append('checkSum', hash);
+            form.append('repoName', repoName);
             console.log(fileChunks[i].length + " JS files will be sent to SLAVE-" + i + " at " + slaveIP + "\nMD5 Hash: " + hash);
             form.submit('http://' + slaveIP + URL, (err, slaveRes) => {
               if (err) {
                 console.log(err);
               } else {
-                console.log("Zipped JS files successfully sent to SLAVE-" + i + " for analysis.");
+                console.log(slaveZipName + " successfully sent to SLAVE-" + i + " for analysis.");
               }
             });
           });

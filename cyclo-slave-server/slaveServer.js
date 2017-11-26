@@ -5,6 +5,7 @@ const multer = require('multer');
 const bodyParser = require("body-parser");
 const formidable = require('formidable');
 const util = require('util');
+const md5File = require("md5-file");
 
 if (process.argv.length <= 2) {
   console.log("Usage: " + __filename + " PORT_NUMBER");
@@ -35,9 +36,14 @@ plato.inspect(files, outputDir, options, callback);
 
 slaveServer.post('/analyse', (req, res) => {
     var form = new formidable.IncomingForm();
-    form.parse(req, function(err, fields, files) {
-      console.log(util.inspect({fields: fields, files: files}));
-      res.send(util.inspect({fields: fields, files: files}));
+    form.parse(req, (err, fields, files) => {
+      console.log(fields);
+      console.log(files.JSFilesZip);
+      const hash = md5File.sync(files.JSFilesZip.path);
+      if (hash === fields.checkSum) {
+        console.log("File integrity preserved.");
+      }
+      res.send("I received the ZIP file suh.")
     });
 });
 
