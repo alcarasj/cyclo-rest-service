@@ -1,5 +1,5 @@
 cyclo-slave-server/node_modules/
+cyclo-slave-server/tmp/
 cyclo-master-server/node_modules/
-cyclo-master-server/repos/
-cyclo-master-server/slaveZips/
+cyclo-master-server/tmp/
 
