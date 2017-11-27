@@ -17,6 +17,8 @@ if (process.argv.length <= 2) {
 }
 
 const TMPDIR = './tmp';
+const SRCDIR = './src';
+const OUTDIR = './reports';
 const PORT = process.argv[2];
 
 if (!fs.existsSync(TMPDIR)) {
@@ -30,28 +32,32 @@ slaveServer.post('/analyse', (req, res) => {
     var form = new formidable.IncomingForm();
     form.parse(req, (err, fields, files) => {
       const hash = md5File.sync(files.JSFilesZip.path);
+      const checkSum = fields.checkSum;
       //Check if zip file still has integrity using the MD5 checksum supplied with the request
-      if (hash === fields.checkSum) {
+      if (hash === checkSum) {
         const JSFilesZip = new AdmZip(files.JSFilesZip.path);
         const zipName = files.JSFilesZip.name;
-        const extractPath = path.join(__dirname, TMPDIR, hash)
+        const repoName = fields.repoName;
+        const repoOwner = fields.repoOwner;
+        const slaveID = fields.slaveID;
+        const extractPath = path.join(__dirname, TMPDIR, hash, SRCDIR);
+        const reportPath = path.join(__dirname, TMPDIR, hash, OUTDIR);
+        var JSFiles = [];
         JSFilesZip.extractAllTo(extractPath, true);
         console.log(zipName + " received for analysis. Extracting to " + extractPath);
+        fs.readdirSync(extractPath).forEach((file) => {
+          JSFiles.push(path.join(extractPath, file));
+        })
+        const platoOptions = {
+          title: 'Complexity of ' + repoOwner + "/" + repoName + " (files sent to SLAVE-" + slaveID + ")"
+        };
+        platoAnalysis(JSFiles, reportPath, platoOptions);
       }
       res.send("I received the ZIP file suh.")
     });
 });
 
-platoAnalysis = () => {
-  var files = [
-    './test.js',
-  ];
-
-  var outputDir = './reports';
-  var options = {
-    title: 'CS4400 Rest Service Development Task'
-  };
-
+platoAnalysis = (files, outputDir, options) => {
   var callback = (report) => {
     console.log("Once analysis is complete, do something.");
   };

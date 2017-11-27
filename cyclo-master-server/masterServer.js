@@ -34,12 +34,12 @@ masterServer.get('/', (req, res) => {
 
 masterServer.post('/analyse', (req, res) => {
   const clientLog = "[" + req.ip + "] ";
-  var repoURL = req.body.repoURL;
-  var tokens = repoURL.split('/');
-  var repoOwner = tokens[tokens.length - 2];
-  var repoName = tokens[tokens.length - 1];
-  var userHash = hashIP(req.ip).toString();
-  var clonePath = path.join(__dirname, TMPDIR, userHash);
+  const repoURL = req.body.repoURL;
+  const tokens = repoURL.split('/');
+  const repoOwner = tokens[tokens.length - 2];
+  const repoName = tokens[tokens.length - 1];
+  const userHash = hashIP(req.ip).toString();
+  const clonePath = path.join(__dirname, TMPDIR, userHash);
   console.log(clientLog + "Requested analysis of " + repoOwner + "/" + repoName);
   rmraf.sync(clonePath);
   var JSFiles = [];
@@ -77,6 +77,8 @@ masterServer.post('/analyse', (req, res) => {
         form.append('JSFilesZip', fs.createReadStream(path.join(pathToSlaveZip)));
         form.append('checkSum', hash);
         form.append('repoName', repoName);
+        form.append('repoOwner', repoOwner);
+        form.append('slaveID', i);
         console.log(clientLog + fileChunks[i].length + " JS files will be sent to SLAVE-" + i + " at " + slaveIP + "\nMD5 Hash: " + hash);
         //Send the POST request to slave
         form.submit('http://' + slaveIP + URL, (err, slaveRes) => {
