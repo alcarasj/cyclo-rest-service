@@ -2,10 +2,10 @@
 ### By Jerico Alcaras, 14317110
 ## Data Flow (as of 27/11/2017)
 ```
-				   /-> SLAVE-0 -\
-CLIENT -> MASTER -|->  SLAVE-1 -|-> MASTER -> CLIENT
-				   \-> SLAVE-2 -/
+CLIENT -> MASTER ->  SLAVES -> MASTER -> CLIENT
 ```				  
+SLAVES consists of three slave servers: SLAVE-0, SLAVE-1, SLAVE-2.
+
 1. CLIENT sends GitHub URL of repo.
 2. MASTER clones repo using GitHub URL, gets all JS files in repo and splits these evenly among slaves.
 3. For each SLAVE, MASTER generates a zip file containing the SLAVE's allocated JS files and sends it to the SLAVE.
