@@ -2,7 +2,7 @@
 ### By Jerico Alcaras, 14317110
 ## Data Flow (as of 27/11/2017)
 
-**CLIENT** → **MASTER** → **SLAVES** → **MASTER** → **CLIENT**
+**CLIENT** → (GitHub repo URL) → **MASTER** → (ZIP file containing JS files) → **SLAVES** → (Complexity reports) → **MASTER** → (Compiled report) → **CLIENT**
 
 **SLAVES** consists of three slave servers: **SLAVE-0**, **SLAVE-1**, **SLAVE-2**.
 One **MASTER** is connected to many **SLAVES** (IP addresses of **SLAVES** are hardcoded in the master server).
