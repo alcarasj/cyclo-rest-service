@@ -1,4 +1,5 @@
 const plato = require('plato');
+const escomplex = require('escomplex');
 const express = require('express');
 const path = require("path");
 const fs = require('fs');
@@ -47,19 +48,19 @@ slaveServer.post('/analyse', (req, res) => {
         console.log(zipName + " received for analysis. Extracting to " + extractPath);
         fs.readdirSync(extractPath).forEach((file) => {
           JSFiles.push(path.join(extractPath, file));
-        })
+        });
         const platoOptions = {
           title: 'Complexity of ' + repoOwner + "/" + repoName + " (files sent to SLAVE-" + slaveID + ")"
         };
-        platoAnalysis(JSFiles, reportPath, platoOptions);
+        platoAnalysis(JSFiles, reportPath, platoOptions, zipName);
       }
       res.send("I received the ZIP file suh.")
     });
 });
 
-platoAnalysis = (files, outputDir, options) => {
+platoAnalysis = (files, outputDir, options, fileName) => {
   var callback = (report) => {
-    console.log("Once analysis is complete, do something.");
+    console.log("Analysis of " + fileName + " complete.");
   };
 
   plato.inspect(files, outputDir, options, callback);

@@ -14,6 +14,7 @@
   "dependencies": {
     "adm-zip": "^0.4.7",
     "console-stamp": "^0.2.6",
+    "escomplex": "^2.0.0-alpha",
     "express": "^4.16.2",
     "form-data": "^2.3.1",
     "formidable": "^1.1.1",

@@ -48,7 +48,7 @@ masterServer.post('/analyse', (req, res) => {
   var repo = Git.Clone(repoURL, clonePath).catch((err) => {
     console.error(err);
   }).then((repo) => {
-    getJSFiles(clonePath, /\.js$/);
+    getJSFiles(clonePath, /\.js$/, userHash);
     console.log(clientLog + "Cloning complete! Detected " + JSFiles.length + " JS files for analysis.");
     if (JSFiles.length <= SLAVES.length) {
       //Simple for-loop round-robin to slaves, no need for zips
@@ -59,54 +59,68 @@ masterServer.post('/analyse', (req, res) => {
       SLAVES.forEach((slaveIP, i) => {
         /* SLAVE HEALTH-CHECK
         ping.sys.probe(slaveIP, (isAlive) => {
-          var slaveCheck = isAlive ? 'SLAVE-' + i + ' is alive.' : 'SLAVE-' + i + ' is dead.';
-          console.log(slaveCheck);
-        });
-        */
-        //Make a zip file for each slave's chunk
-        var slaveZip = new AdmZip();
-        fileChunks[i].forEach((file) => {
-          slaveZip.addLocalFile(file);
-        });
-        const slaveZipName = repoName + "-SLAVE-" + i + ".zip";
-        const pathToSlaveZip = path.join(__dirname, TMPDIR, userHash, ZIPDIR, slaveZipName);
-        slaveZip.writeZip(pathToSlaveZip);
-        //Send an MD5 checksum with the zip file to preserve integrity
-        const hash = md5File.sync(pathToSlaveZip);
-        var form = new FormData();
-        form.append('JSFilesZip', fs.createReadStream(path.join(pathToSlaveZip)));
-        form.append('checkSum', hash);
-        form.append('repoName', repoName);
-        form.append('repoOwner', repoOwner);
-        form.append('slaveID', i);
-        console.log(clientLog + fileChunks[i].length + " JS files will be sent to SLAVE-" + i + " at " + slaveIP + "\nMD5 Hash: " + hash);
-        //Send the POST request to slave
-        form.submit('http://' + slaveIP + URL, (err, slaveRes) => {
-          if (err) {
-            console.error(err);
-          } else {
-            console.log(clientLog + slaveZipName + " successfully sent to SLAVE-" + i + " for analysis.");
-          }
-        });
+        var slaveCheck = isAlive ? 'SLAVE-' + i + ' is alive.' : 'SLAVE-' + i + ' is dead.';
+        console.log(slaveCheck);
       });
-      res.send("Complete?");
-    }
-  });
-
-  getJSFiles = (startPath, filter) => {
-    var files = fs.readdirSync(startPath);
-    for (var i = 0; i < files.length; i++) {
-      var fileName = path.join(startPath, files[i]);
-      var stat = fs.lstatSync(fileName);
-      if (stat.isDirectory()) {
-        getJSFiles(fileName, filter);
-      }
-      else if (filter.test(fileName)) {
-        JSFiles.push(fileName);
-      }
-    }
+      */
+      //Make a zip file for each slave's chunk
+      var slaveZip = new AdmZip();
+      console.log(fileChunks[i]);
+      fileChunks[i].forEach((file) => {
+        slaveZip.addLocalFile(file.localPath);
+      });
+      const slaveZipName = repoName + "-SLAVE-" + i + ".zip";
+      const pathToSlaveZip = path.join(__dirname, TMPDIR, userHash, ZIPDIR, slaveZipName);
+      slaveZip.writeZip(pathToSlaveZip);
+      //Send an MD5 checksum with the zip file to preserve integrity
+      const hash = md5File.sync(pathToSlaveZip);
+      var form = new FormData();
+      form.append('JSFilesZip', fs.createReadStream(path.join(pathToSlaveZip)));
+      form.append('checkSum', hash);
+      form.append('repoName', repoName);
+      form.append('repoOwner', repoOwner);
+      form.append('slaveID', i);
+      console.log(clientLog + fileChunks[i].length + " JS files will be sent to SLAVE-" + i + " at " + slaveIP + "\nMD5 Hash: " + hash);
+      //Send the POST request to slave
+      form.submit('http://' + slaveIP + URL, (err, slaveRes) => {
+        if (err) {
+          console.error(err);
+        } else {
+          console.log(clientLog + slaveZipName + " successfully sent to SLAVE-" + i + " for analysis.");
+        }
+      });
+    });
+    res.send("Complete?");
   }
 });
+
+getJSFiles = (startPath, filter, userHash) => {
+  var files = fs.readdirSync(startPath);
+  for (var i = 0; i < files.length; i++) {
+    var fileName = path.join(startPath, files[i]);
+    var stat = fs.lstatSync(fileName);
+    if (stat.isDirectory()) {
+      getJSFiles(fileName, filter, userHash);
+    } else if (filter.test(fileName)) {
+      var directoryInRepo = getDirectoryInRepo(fileName, userHash);
+      var file = { localPath: fileName, repoPath: directoryInRepo };
+      JSFiles.push(file);
+    }
+  }
+}
+});
+
+getDirectoryInRepo = (fileName, userHash) => {
+  var tokens = fileName.split(path.sep);
+  var directoryTokens = [];
+  var i = tokens.length - 1;
+  while (tokens[i] !== userHash) {
+    directoryTokens.push(tokens[i]);
+    i--;
+  }
+  directoryTokens.reverse();
+  return directoryTokens.join(path.sep);
+}
 
 splitFiles = (files, parts) => {
   var rest = files.length % parts,
