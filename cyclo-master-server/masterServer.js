@@ -8,6 +8,7 @@ const dns = require('dns');
 const request = require('request');
 const FormData = require('form-data');
 const AdmZip = require('adm-zip');
+const Stopwatch = require('timer-stopwatch');
 const md5File = require("md5-file");
 const ping = require('ping');
 require('console-stamp')(console, { pattern: 'dd/mm/yyyy HH:MM:ss' });
@@ -33,6 +34,8 @@ masterServer.get('/', (req, res) => {
 });
 
 masterServer.post('/analyse', (req, res) => {
+  var timer = new Stopwatch();
+  timer.start();
   const clientLog = "[" + req.ip + "] ";
   const repoURL = req.body.repoURL;
   const tokens = repoURL.split('/');
@@ -51,7 +54,7 @@ masterServer.post('/analyse', (req, res) => {
     console.error(err);
   }).then((repo) => {
     getJSFiles(clonePath, /\.js$/, userHash);
-    console.log(clientLog + "Cloning complete! Detected " + JSFiles.length + " JS files for analysis.");
+    console.log(clientLog + "Cloning complete! Sending " + JSFiles.length + " JS files to slaves for analysis.");
     var slaveIndex = 0;
     for (var i = 0; i < JSFiles.length; i++) {
       if (slaveIndex >= SLAVES.length) {
@@ -79,7 +82,10 @@ masterServer.post('/analyse', (req, res) => {
           totalCyclomaticComplexity += report.cyclomaticComplexity;
           if (reportsReceived === JSFiles.length) {
             averageCyclomaticComplexity = totalCyclomaticComplexity / reportsReceived;
-            res.send("The average cyclomatic complexity of " + repoURL + " is " + averageCyclomaticComplexity + ".")
+            timer.stop();
+            const timeTakenInSeconds = timer.ms / 1000;
+            console.log("Analysis of " + repoURL + " complete.");
+            res.send("The average cyclomatic complexity of " + repoURL + " is " + averageCyclomaticComplexity + ".\n This operation took " + timeTakenInSeconds  + " seconds.")
           }
         }
       });
