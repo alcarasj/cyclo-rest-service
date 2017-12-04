@@ -32,29 +32,27 @@ slaveServer.use(bodyParser.urlencoded({ extended: false }));
 slaveServer.post('/analyse', (req, res) => {
     var form = new formidable.IncomingForm();
     form.parse(req, (err, fields, files) => {
-      const hash = md5File.sync(files.JSFilesZip.path);
+      const localPath = files.sourceFile.path;
+      const hash = md5File.sync(localPath);
       const checkSum = fields.checkSum;
-      //Check if zip file still has integrity using the MD5 checksum supplied with the request
+      const repoString = '[' + fields.repoString + ']';
+      const slaveID = fields.slaveID;
+      const userHash = fields.userHash;
+      const repoPath = fields.repoPath;
+      const slaveLog = '[SLAVE-' + slaveID + '] ';
       if (hash === checkSum) {
-        const JSFilesZip = new AdmZip(files.JSFilesZip.path);
-        const zipName = files.JSFilesZip.name;
-        const repoName = fields.repoName;
-        const repoOwner = fields.repoOwner;
-        const slaveID = fields.slaveID;
-        const extractPath = path.join(__dirname, TMPDIR, hash, SRCDIR);
-        const reportPath = path.join(__dirname, TMPDIR, hash, OUTDIR);
-        var JSFiles = [];
-        JSFilesZip.extractAllTo(extractPath, true);
-        console.log(zipName + " received for analysis. Extracting to " + extractPath);
-        fs.readdirSync(extractPath).forEach((file) => {
-          JSFiles.push(path.join(extractPath, file));
-        });
-        const platoOptions = {
-          title: 'Complexity of ' + repoOwner + "/" + repoName + " (files sent to SLAVE-" + slaveID + ")"
-        };
-        platoAnalysis(JSFiles, reportPath, platoOptions, zipName);
+        console.log(slaveLog + 'Received ' + repoPath + ' for analysis.');
+        try {
+          const sourceString = fs.readFileSync(localPath).toString();
+          const report = escomplex.analyse(sourceString);
+          const cyclomaticComplexity = report.aggregate.cyclomatic;
+          res.json({ cyclomaticComplexity });
+        }
+        catch (err) {
+          console.log(repoPath + " could not be parsed. (" + err + ")");
+          res.json({ cyclomaticComplexity: 0 });
+        }
       }
-      res.send("I received the ZIP file suh.")
     });
 });
 
