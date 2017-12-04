@@ -43,7 +43,9 @@ masterServer.post('/analyse', (req, res) => {
   console.log(clientLog + "Requested analysis of " + repoOwner + "/" + repoName);
   rmraf.sync(clonePath);
   var JSFiles = [];
-
+  var totalCyclomaticComplexity = 0;
+  var averageCyclomaticComplexity = 0;
+  var reportsReceived = 0;
   console.log(clientLog + "Cloning GitHub repository at " + repoURL + " (this may take a while)...");
   var repo = Git.Clone(repoURL, clonePath).catch((err) => {
     console.error(err);
@@ -54,46 +56,50 @@ masterServer.post('/analyse', (req, res) => {
     for (var i = 0; i < JSFiles.length; i++) {
       if (slaveIndex >= SLAVES.length) {
         slaveIndex = 0;
-      } else {
-        const hash = md5File.sync(JSFiles[i].localPath);
-        const localPath = JSFiles[i].localPath;
-        const repoPath = JSFiles[i].repoPath;
-        var form = {
-          sourceFile: fs.createReadStream(localPath),
-          checkSum: hash,
-          repoString: repoOwner + '/' + repoName,
-          repoPath: repoPath,
-          slaveID: slaveIndex,
-          userHash: userHash,
-        };
-        request.post({ url: 'http://' + SLAVES[slaveIndex] + URL, formData: form }, (err, slaveRes, body) => {
-          if (err) {
-            return console.error(err);
-          } else {
-            console.log('Upload successful! Server responded with:', body);
+      }
+      const slaveID = slaveIndex++;
+      const hash = md5File.sync(JSFiles[i].localPath);
+      const localPath = JSFiles[i].localPath;
+      const repoPath = JSFiles[i].repoPath;
+      const form = {
+        sourceFile: fs.createReadStream(localPath),
+        checkSum: hash,
+        repoString: repoOwner + '/' + repoName,
+        repoPath: repoPath,
+        slaveID: slaveID,
+        userHash: userHash,
+        fileID: i,
+      };
+      request.post({ url: 'http://' + SLAVES[slaveID] + URL, formData: form }, (err, slaveRes, body) => {
+        if (err) {
+          return console.error(err);
+        } else {
+          const report = JSON.parse(body);
+          reportsReceived++;
+          totalCyclomaticComplexity += report.cyclomaticComplexity;
+          if (reportsReceived === JSFiles.length) {
+            averageCyclomaticComplexity = totalCyclomaticComplexity / reportsReceived;
+            res.send("The average cyclomatic complexity of " + repoURL + " is " + averageCyclomaticComplexity + ".")
           }
-        });
-        console.log(clientLog + repoPath + " was sent to " + "SLAVE-" + slaveIndex + " for analysis.");
-        slaveIndex++;
-     }
-  }
-  res.send("Complete?");
-});
+        }
+      });
+    }
+  });
 
-getJSFiles = (startPath, filter, userHash) => {
-  var files = fs.readdirSync(startPath);
-  for (var i = 0; i < files.length; i++) {
-    var fileName = path.join(startPath, files[i]);
-    var stat = fs.lstatSync(fileName);
-    if (stat.isDirectory()) {
-      getJSFiles(fileName, filter, userHash);
-    } else if (filter.test(fileName)) {
-      var pathInRepo = getRepoPath(fileName, userHash);
-      var file = { localPath: fileName, repoPath: pathInRepo };
-      JSFiles.push(file);
+  getJSFiles = (startPath, filter, userHash) => {
+    var files = fs.readdirSync(startPath);
+    for (var i = 0; i < files.length; i++) {
+      var fileName = path.join(startPath, files[i]);
+      var stat = fs.lstatSync(fileName);
+      if (stat.isDirectory()) {
+        getJSFiles(fileName, filter, userHash);
+      } else if (filter.test(fileName)) {
+        var pathInRepo = getRepoPath(fileName, userHash);
+        var file = { localPath: fileName, repoPath: pathInRepo };
+        JSFiles.push(file);
+      }
     }
   }
-}
 });
 
 getRepoPath = (fileName, userHash) => {

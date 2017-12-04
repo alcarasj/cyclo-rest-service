@@ -39,6 +39,7 @@ slaveServer.post('/analyse', (req, res) => {
       const slaveID = fields.slaveID;
       const userHash = fields.userHash;
       const repoPath = fields.repoPath;
+      const fileID = fields.fileID;
       const slaveLog = '[SLAVE-' + slaveID + '] ';
       if (hash === checkSum) {
         console.log(slaveLog + 'Received ' + repoPath + ' for analysis.');
@@ -46,11 +47,11 @@ slaveServer.post('/analyse', (req, res) => {
           const sourceString = fs.readFileSync(localPath).toString();
           const report = escomplex.analyse(sourceString);
           const cyclomaticComplexity = report.aggregate.cyclomatic;
-          res.json({ cyclomaticComplexity });
+          res.json({ cyclomaticComplexity, repoPath });
         }
         catch (err) {
           console.log(repoPath + " could not be parsed. (" + err + ")");
-          res.json({ cyclomaticComplexity: 0 });
+          res.json({ cyclomaticComplexity: 0, repoPath });
         }
       }
     });
