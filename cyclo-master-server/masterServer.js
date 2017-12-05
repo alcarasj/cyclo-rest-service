@@ -11,6 +11,7 @@ const AdmZip = require('adm-zip');
 const Stopwatch = require('timer-stopwatch');
 const md5File = require("md5-file");
 const ping = require('ping');
+const jade = require('jade');
 require('console-stamp')(console, { pattern: 'dd/mm/yyyy HH:MM:ss' });
 
 const PORT = 8080;
@@ -26,11 +27,13 @@ if (!fs.existsSync(TMPDIR)) {
 var masterServer = express();
 masterServer.use(bodyParser.urlencoded({ extended: false }));
 masterServer.use(bodyParser.json());
+masterServer.set('view engine', 'jade');
+
 
 masterServer.get('/', (req, res) => {
   const clientLog = "[" + req.ip + "] ";
   console.log(clientLog + "Connected to form.");
-  res.sendFile(path.join(__dirname + '/index.html'));
+  res.render('index');
 });
 
 masterServer.post('/analyse', (req, res) => {
@@ -43,24 +46,22 @@ masterServer.post('/analyse', (req, res) => {
   const repoName = tokens[tokens.length - 1];
   const userHash = hashIP(req.ip).toString();
   const clonePath = path.join(__dirname, TMPDIR, userHash);
-  console.log(clientLog + "Requested analysis of " + repoOwner + "/" + repoName);
+  console.log(clientLog + "Requested analysis of " + repoURL);
   rmraf.sync(clonePath);
   var JSFiles = [];
-  var totalCyclomaticComplexity = 0;
-  var averageCyclomaticComplexity = 0;
-  var reportsReceived = 0;
+  var slaveReports = [];
   console.log(clientLog + "Cloning GitHub repository at " + repoURL + " (this may take a while)...");
   var repo = Git.Clone(repoURL, clonePath).catch((err) => {
     console.error(err);
   }).then((repo) => {
     getJSFiles(clonePath, /\.js$/, userHash);
     console.log(clientLog + "Cloning complete! Sending " + JSFiles.length + " JS files to slaves for analysis.");
-    var slaveIndex = 0;
+    var roundRobin = 0;
     for (var i = 0; i < JSFiles.length; i++) {
-      if (slaveIndex >= SLAVES.length) {
-        slaveIndex = 0;
+      if (roundRobin >= SLAVES.length) {
+        roundRobin = 0;
       }
-      const slaveID = slaveIndex++;
+      const slaveID = roundRobin++;
       const hash = md5File.sync(JSFiles[i].localPath);
       const localPath = JSFiles[i].localPath;
       const repoPath = JSFiles[i].repoPath;
@@ -78,14 +79,37 @@ masterServer.post('/analyse', (req, res) => {
           return console.error(err);
         } else {
           const report = JSON.parse(body);
-          reportsReceived++;
-          totalCyclomaticComplexity += report.cyclomaticComplexity;
-          if (reportsReceived === JSFiles.length) {
-            averageCyclomaticComplexity = totalCyclomaticComplexity / reportsReceived;
+          slaveReports.push(report);
+          if (slaveReports.length === JSFiles.length) {
+            const cyclomaticComplexities = slaveReports.map((report) => report.cyclomaticComplexity);
+            const repoPaths = slaveReports.map((report) => report.repoPath);
+            const totalCyclomaticComplexity = slaveReports.reduce((a, b) => a + b, 0);
+            console.log(cyclomaticComplexities);
+            console.log(repoPaths);
+            const averageCyclomaticComplexity = totalCyclomaticComplexity / JSFiles.length;
             timer.stop();
             const timeTakenInSeconds = timer.ms / 1000;
             console.log("Analysis of " + repoURL + " complete.");
-            res.send("The average cyclomatic complexity of " + repoURL + " is " + averageCyclomaticComplexity + ".\n This operation took " + timeTakenInSeconds  + " seconds.")
+            const chartOptions = {
+              type: 'horizontalBar',
+              data: {
+                labels: repoPaths,
+                datasets: [
+                  {
+                    label: "Cyclomatic complexity",
+                    data: cyclomaticComplexities,
+                  }
+                ]
+              },
+              options: {
+                legend: { display: false },
+                title: {
+                  display: true,
+                  text: "Cyclomatic complexity (No. of linearly independent paths through a source file)"
+                }
+              }
+            };
+            res.render('result', { chartOptions: JSON.stringify(chartOptions) });
           }
         }
       });
@@ -118,27 +142,6 @@ getRepoPath = (fileName, userHash) => {
   }
   directoryTokens.reverse();
   return directoryTokens.join(path.sep);
-}
-
-splitFiles = (files, parts) => {
-  var rest = files.length % parts,
-  restUsed = rest,
-  partLength = Math.floor(files.length / parts),
-  result = [];
-  for (var i = 0; i < files.length; i += partLength) {
-    var end = partLength + i,
-    add = false;
-    if (rest !== 0 && restUsed) {
-      end++;
-      restUsed--;
-      add = true;
-    }
-    result.push(files.slice(i, end));
-    if (add) {
-      i++;
-    }
-  }
-  return result;
 }
 
 hashIP = (ip) => {
