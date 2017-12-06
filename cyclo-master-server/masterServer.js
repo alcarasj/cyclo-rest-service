@@ -16,7 +16,7 @@ const isGithubUrl = require('is-github-url');
 require('console-stamp')(console, { pattern: 'dd/mm/yyyy HH:MM:ss' });
 
 const PORT = 8080;
-const SLAVES = ['10.62.0.144:49160', '10.62.0.144:49161', '10.62.0.144:49162', '10.62.0.144:49163', '10.62.0.144:49164'];
+const SLAVES = ['127.0.0.1:8081', '127.0.0.1:8082', '127.0.0.1:8083', '127.0.0.1:8084', '127.0.0.1:8085'];
 const URL = '/analyse';
 const ZIPDIR = './slaveZips';
 const TMPDIR = './tmp';
