@@ -12,6 +12,7 @@ const Stopwatch = require('timer-stopwatch');
 const md5File = require("md5-file");
 const ping = require('ping');
 const jade = require('jade');
+const isGithubUrl = require('is-github-url');
 require('console-stamp')(console, { pattern: 'dd/mm/yyyy HH:MM:ss' });
 
 const PORT = 8080;
@@ -33,88 +34,112 @@ masterServer.set('view engine', 'jade');
 masterServer.get('/', (req, res) => {
   const clientLog = "[" + req.ip + "] ";
   console.log(clientLog + "Connected to form.");
+  var message = "";
   res.render('index');
 });
 
-masterServer.post('/analyse', (req, res) => {
+masterServer.get('/analyse', (req, res) => {
   var timer = new Stopwatch();
   timer.start();
   const clientLog = "[" + req.ip + "] ";
-  const repoURL = req.body.repoURL;
+  if (req.query.repoURL[req.query.repoURL.length - 1] === '/') {
+      req.query.repoURL = req.query.repoURL.slice(0, -1);
+  }
+  var repoURL = req.query.repoURL;
   const tokens = repoURL.split('/');
   const repoOwner = tokens[tokens.length - 2];
   const repoName = tokens[tokens.length - 1];
   const userHash = hashIP(req.ip).toString();
   const clonePath = path.join(__dirname, TMPDIR, userHash);
-  console.log(clientLog + "Requested analysis of " + repoURL);
-  rmraf.sync(clonePath);
-  var JSFiles = [];
-  var slaveReports = [];
-  console.log(clientLog + "Cloning GitHub repository at " + repoURL + " (this may take a while)...");
-  var repo = Git.Clone(repoURL, clonePath).catch((err) => {
-    console.error(err);
-  }).then((repo) => {
-    getJSFiles(clonePath, /\.js$/, userHash);
-    console.log(clientLog + "Cloning complete! Sending " + JSFiles.length + " JS files to slaves for analysis.");
-    var roundRobin = 0;
-    for (var i = 0; i < JSFiles.length; i++) {
-      if (roundRobin >= SLAVES.length) {
-        roundRobin = 0;
-      }
-      const slaveID = roundRobin++;
-      const hash = md5File.sync(JSFiles[i].localPath);
-      const localPath = JSFiles[i].localPath;
-      const repoPath = JSFiles[i].repoPath;
-      const form = {
-        sourceFile: fs.createReadStream(localPath),
-        checkSum: hash,
-        repoString: repoOwner + '/' + repoName,
-        repoPath: repoPath,
-        slaveID: slaveID,
-        userHash: userHash,
-        fileID: i,
-      };
-      request.post({ url: 'http://' + SLAVES[slaveID] + URL, formData: form }, (err, slaveRes, body) => {
-        if (err) {
-          return console.error(err);
-        } else {
-          const report = JSON.parse(body);
-          slaveReports.push(report);
-          if (slaveReports.length === JSFiles.length) {
-            const cyclomaticComplexities = slaveReports.map((report) => report.cyclomaticComplexity);
-            const repoPaths = slaveReports.map((report) => report.repoPath);
-            const totalCyclomaticComplexity = slaveReports.reduce((a, b) => a + b, 0);
-            console.log(cyclomaticComplexities);
-            console.log(repoPaths);
-            const averageCyclomaticComplexity = totalCyclomaticComplexity / JSFiles.length;
-            timer.stop();
-            const timeTakenInSeconds = timer.ms / 1000;
-            console.log("Analysis of " + repoURL + " complete.");
-            const chartOptions = {
-              type: 'horizontalBar',
-              data: {
-                labels: repoPaths,
-                datasets: [
-                  {
-                    label: "Cyclomatic complexity",
-                    data: cyclomaticComplexities,
-                  }
-                ]
-              },
-              options: {
-                legend: { display: false },
-                title: {
-                  display: true,
-                  text: "Cyclomatic complexity (No. of linearly independent paths through a source file)"
-                }
-              }
-            };
-            res.render('result', { chartOptions: JSON.stringify(chartOptions) });
-          }
+  if (isGithubUrl(repoURL)) {
+    console.log(clientLog + "Requested analysis of " + repoURL);
+    rmraf.sync(clonePath);
+    var JSFiles = [];
+    var slaveReports = [];
+    console.log(clientLog + "Cloning GitHub repository at " + repoURL + " (this may take a while)...");
+    var repo = Git.Clone(repoURL, clonePath).catch((err) => {
+      console.error(err);
+    }).then((repo) => {
+      const timeStamp = new Date().toLocaleString();
+      getJSFiles(clonePath, /\.js$/, userHash);
+      console.log(clientLog + "Cloning complete! Sending " + JSFiles.length + " JS files to slaves for analysis.");
+      var roundRobin = 0;
+      for (var i = 0; i < JSFiles.length; i++) {
+        if (roundRobin >= SLAVES.length) {
+          roundRobin = 0;
         }
-      });
-    }
-  });
+        const slaveID = roundRobin++;
+        const hash = md5File.sync(JSFiles[i].localPath);
+        const localPath = JSFiles[i].localPath;
+        const repoPath = JSFiles[i].repoPath;
+        const form = {
+          sourceFile: fs.createReadStream(localPath),
+          checkSum: hash,
+          repoString: repoOwner + '/' + repoName,
+          repoPath: repoPath,
+          slaveID: slaveID,
+          userHash: userHash,
+          fileID: i,
+        };
+        request.post({ url: 'http://' + SLAVES[slaveID] + URL, formData: form }, (err, slaveRes, body) => {
+          if (err) {
+            return console.error(err);
+          } else {
+            const report = JSON.parse(body);
+            slaveReports.push(report);
+            if (slaveReports.length === JSFiles.length) {
+              const cyclomaticComplexities = slaveReports.map((report) => report.cyclomaticComplexity);
+              const repoPaths = slaveReports.map((report) => report.repoPath);
+              const totalCyclomaticComplexity = cyclomaticComplexities.reduce((a, b) => a + b, 0);
+              const averageCyclomaticComplexity = totalCyclomaticComplexity / JSFiles.length;
+              timer.stop();
+              const timeTakenInSeconds = timer.ms / 1000;
+              console.log("Analysis of " + repoURL + " complete.");
+              const chartOptions = {
+                type: 'horizontalBar',
+                data: {
+                  labels: repoPaths,
+                  datasets: [
+                    {
+                      label: "Cyclomatic complexity",
+                      backgroundColor: '#D9213B',
+                      borderColor: '#D9213B',
+                      hoverBackgroundColor: '#D9213B',
+                      data: cyclomaticComplexities,
+                    }
+                  ]
+                },
+                options: {
+                  legend: { display: false },
+                  title: {
+                    display: true,
+                    text: "Cyclomatic complexity (No. of linearly independent paths through a source file)"
+                  },
+                  scales: {
+                    xAxes: [{
+                      ticks: {
+                        beginAtZero:true
+                      },
+                    }],
+                  },
+                }
+              };
+              res.render('result', { params: {
+                 chartOptions: JSON.stringify(chartOptions),
+                 averageCyclomaticComplexity: averageCyclomaticComplexity,
+                 timeTakenInSeconds: timeTakenInSeconds,
+                 repoString: repoOwner + '/' + repoName,
+                 numberOfSourceFiles: JSFiles.length,
+                 timeStamp: timeStamp,
+              }});
+            }
+          }
+        });
+      }
+    });
+  } else {
+      res.status(400).send("You did not provide a valid GitHub repository URL.")
+  }
 
   getJSFiles = (startPath, filter, userHash) => {
     var files = fs.readdirSync(startPath);

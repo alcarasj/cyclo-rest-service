@@ -1,8 +1,18 @@
 doctype html
 html
   head
+    title Cyclo REST Service
     script(src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js')
-  body
-    canvas#bar-chart(style='position: absolute; left: 0px; top: 0px;', height=1000)
+  body  
+    div(style="position: absolute; width: 100%; height: 100%; margin: auto; text-align: center;")
+      h1(style="font-family:helvetica; font-size:60px") Analysis of #{params.repoString}
+      h2(style="font-family:helvetica") Latest commit @ master on #{params.timeStamp}
+      h2(style="font-family:helvetica") #{params.numberOfSourceFiles} JavaScript files analysed.
+      h2(style="font-family:helvetica") Average Cyclomatic Complexity: #{params.averageCyclomaticComplexity}
+      h2(style="font-family:helvetica") Time Taken: #{params.timeTakenInSeconds} seconds
+      canvas(id="bar-chart", style='margin: auto;')
     script.
-      new Chart(document.getElementById("bar-chart"), !{chartOptions});
+      var canvas = document.getElementById("bar-chart");
+      canvas.height = !{params.numberOfSourceFiles} * 12.5;
+      new Chart(document.getElementById("bar-chart"), !{params.chartOptions});
+      

@@ -13,6 +13,7 @@
     "console-stamp": "^0.2.6",
     "express": "^4.16.2",
     "form-data": "^2.3.1",
+    "is-github-url": "^1.2.2",
     "jade": "^1.11.0",
     "md5-file": "^3.2.3",
     "nodegit": "^0.20.3",
