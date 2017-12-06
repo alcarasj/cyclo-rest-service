@@ -4,7 +4,8 @@
   "description": "",
   "main": "masterServer.js",
   "scripts": {
-    "test": "node masterServer.js"
+    "test": "node masterServer.js",
+    "start": "node masterServer.js"
   },
   "author": "Jerico Alcaras",
   "license": "ISC",
