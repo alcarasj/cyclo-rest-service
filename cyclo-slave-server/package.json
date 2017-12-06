@@ -4,11 +4,13 @@
   "description": "",
   "main": "slaveServer.js",
   "scripts": {
-    "test": "npm-run-all -p SLAVE-0 SLAVE-1 SLAVE-2",
+    "test": "npm-run-all -p SLAVE-0 SLAVE-1 SLAVE-2 SLAVE-3 SLAVE-4",
 	"start": "node slaveServer.js 8080",
     "SLAVE-0": "node slaveServer.js 8081",
     "SLAVE-1": "node slaveServer.js 8082",
-    "SLAVE-2": "node slaveServer.js 8083"
+    "SLAVE-2": "node slaveServer.js 8083",
+    "SLAVE-3": "node slaveServer.js 8084",
+    "SLAVE-4": "node slaveServer.js 8085"
   },
   "author": "Jerico Alcaras",
   "license": "ISC",

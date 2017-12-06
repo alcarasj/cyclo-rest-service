@@ -8,6 +8,7 @@ html
       h1(style="font-family:helvetica; font-size:60px") Analysis of #{params.repoString}
       h2(style="font-family:helvetica") Latest commit @ master on #{params.timeStamp}
       h2(style="font-family:helvetica") #{params.numberOfSourceFiles} JavaScript files analysed.
+      h2(style="font-family:helvetica") #{params.numberOfSlaves} slaves worked on this analysis.
       h2(style="font-family:helvetica") Average Cyclomatic Complexity: #{params.averageCyclomaticComplexity}
       h2(style="font-family:helvetica") Time Taken: #{params.timeTakenInSeconds} seconds
       canvas(id="bar-chart", style='margin: auto;')
