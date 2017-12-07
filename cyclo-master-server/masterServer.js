@@ -13,6 +13,7 @@ const md5File = require("md5-file");
 const ping = require('ping');
 const jade = require('jade');
 const isGithubUrl = require('is-github-url');
+const sha1 = require('sha1');
 require('console-stamp')(console, { pattern: 'dd/mm/yyyy HH:MM:ss' });
 
 const PORT = 8080;
@@ -49,7 +50,10 @@ masterServer.get('/analyse', (req, res) => {
   const tokens = repoURL.split('/');
   const repoOwner = tokens[tokens.length - 2];
   const repoName = tokens[tokens.length - 1];
-  const userHash = hashIP(req.ip).toString();
+  const userHash = sha1(req.ip);
+  if (fs.existsSync(path.join(__dirname, TMPDIR, userHash ))) {
+    return res.status(400).send("An analysis process is currently ongoing for your IP address. Please try again in a moment.")
+  }
   const clonePath = path.join(__dirname, TMPDIR, userHash);
   if (isGithubUrl(repoURL)) {
     console.log(clientLog + "Requested analysis of " + repoURL);
@@ -133,6 +137,7 @@ masterServer.get('/analyse', (req, res) => {
                  numberOfSlaves: SLAVES.length,
                  timeStamp: timeStamp,
               }});
+              rmraf.sync(clonePath);
             }
           }
         });
@@ -168,13 +173,6 @@ getRepoPath = (fileName, userHash) => {
   }
   directoryTokens.reverse();
   return directoryTokens.join(path.sep);
-}
-
-hashIP = (ip) => {
-  return ip.split("").reduce((a,b) => {
-    a = ((a<<5) - a) + b.charCodeAt(0);
-    return a & a;
-  }, 0);
 }
 
 masterServer.listen(PORT, (err) => {

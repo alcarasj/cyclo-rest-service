@@ -57,14 +57,6 @@ slaveServer.post('/analyse', (req, res) => {
     });
 });
 
-platoAnalysis = (files, outputDir, options, fileName) => {
-  var callback = (report) => {
-    console.log("Analysis of " + fileName + " complete.");
-  };
-
-  plato.inspect(files, outputDir, options, callback);
-}
-
 slaveServer.listen(PORT, (err) => {
   if (err) {
     return console.log('Slave server failed to start.', err)
