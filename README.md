@@ -38,7 +38,7 @@ Upon receipt of a client's analysis request, **MASTER** does the following:
 ## Slave Server
 
 **SLAVE** is an instance of `cyclo-slave-server/slaveServer.js`.
-Five **SLAVES** can be generated locally by using the provided NPM `test` script in `cyclo-slave-server/package.json`. 
+Five **SLAVES** can be generated locally by using the provided NPM `start` script in `cyclo-slave-server/package.json`. 
 Upon receipt of a JS file from **MASTER**, a **SLAVE** does the following:
 1. Check for the file's integrity by performing a MD5 check using the checksum sent with the POST request.
 2. If integrity was verified, analyse the file using ESComplex (returns a result object on completion, if file has syntactic/lexical errors then cyclomatic complexity of that file is zero).
