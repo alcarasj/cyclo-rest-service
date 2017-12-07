@@ -4,8 +4,8 @@
   "description": "",
   "main": "slaveServer.js",
   "scripts": {
+    "start": "npm-run-all -p SLAVE-0 SLAVE-1 SLAVE-2 SLAVE-3 SLAVE-4",
     "test": "npm-run-all -p SLAVE-0 SLAVE-1 SLAVE-2 SLAVE-3 SLAVE-4",
-	"start": "node slaveServer.js 8080",
     "SLAVE-0": "node slaveServer.js 8081",
     "SLAVE-1": "node slaveServer.js 8082",
     "SLAVE-2": "node slaveServer.js 8083",
