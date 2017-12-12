@@ -1,7 +1,7 @@
 # Cyclo REST Service (CS4400 REST Service Development Task)
 ### By Jerico Alcaras, 14317110
 ## Run using NPM
-This service requires **Node** and **NPM** in order to run.
+This service requires **Node** and **NPM** in order to run (built and tested using Node 8.2.1 and NPM 5.5.1).
 1. Clone the repository.
 2. Open a terminal, `cd` to `cyclo-master-server` and run `npm install`. 
 3. Run `npm start` (this starts one instance of the **MASTER** server on port 8080).
