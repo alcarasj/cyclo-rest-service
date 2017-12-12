@@ -3,9 +3,9 @@
 ## Run using NPM
 This service requires **Node** and **NPM** in order to run.
 1. Clone the repository.
-2. `cd` to `cyclo-master-server` and run `npm install`. 
+2. Open a terminal, `cd` to `cyclo-master-server` and run `npm install`. 
 3. Run `npm start` (this starts one instance of the **MASTER** server on port 8080).
-4. `cd` to `cyclo-slave-server` and run `npm install`.
+4. Open another terminal, `cd` to `cyclo-slave-server` and run `npm install`.
 5. Run `npm start` (this starts five instances of the **SLAVE** server on ports 8081, 8082, 8083, 8084 and 8085).
 6. Go to `http://localhost:8080` and enter a GitHub repository's URL e.g https://github.com/nodegit/nodegit
 7. Stay on the page and wait for the analysis to finish. The server will return an error message if anything goes wrong during the analysis.
