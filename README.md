@@ -52,3 +52,11 @@ Upon receipt of a JS file from **MASTER**, a **SLAVE** does the following:
 2. If integrity was verified, analyse the file using ESComplex (returns a result object on completion, if file has syntactic/lexical errors then cyclomatic complexity of that file is zero).
 3. Extract the cyclomatic complexity from this result, and place it in a response object with the file's path in the repository.
 4. Send this response object back to **MASTER**.
+
+## Benchmarks
+
+Slaves	      | Time taken
+------------- | -------------
+1	      | 16.075s
+3             | 15.647s
+5             | 13.322s
